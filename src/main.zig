@@ -79,23 +79,32 @@ pub const Regex = struct {
     capture_count: usize,
     leak_check: *u8,
 
+    pub const CompileError = error{CompileError};
+    pub const ExecError = error{ExecError};
+
     pub fn compile(
         pattern: [:0]const u8,
         options: Options,
-    ) !Regex {
+    ) (CompileError || std.mem.Allocator.Error)!Regex {
         var err: [*c]const u8 = undefined;
         var err_offset: c_int = undefined;
 
-        const pcre = c.pcre_compile(pattern, options.compile(), &err, &err_offset, 0) orelse return error.TODO;
+        const pcre = c.pcre_compile(pattern, options.compile(), &err, &err_offset, 0) orelse {
+            std.debug.warn("pcre_compile (at {}): {}\n", .{ err_offset, @ptrCast([*:0]const u8, err) });
+            return error.CompileError;
+        };
         errdefer c.pcre_free.?(pcre);
 
         const pcre_extra = c.pcre_study(pcre, 0, &err);
-        if (err != 0) return error.TODO;
+        if (err != 0) {
+            std.debug.warn("pcre_study: {}\n", .{@ptrCast([*:0]const u8, err)});
+            return error.CompileError;
+        }
         errdefer c.pcre_free_study(pcre_extra);
 
         var capture_count: c_int = undefined;
         var fullinfo_rc = c.pcre_fullinfo(pcre, pcre_extra, c.PCRE_INFO_CAPTURECOUNT, &capture_count);
-        if (fullinfo_rc != 0) return error.TODO;
+        if (fullinfo_rc != 0) @panic("could not request PCRE_INFO_CAPTURECOUNT");
 
         return Regex{
             .pcre = pcre,
@@ -111,29 +120,40 @@ pub const Regex = struct {
         c.pcre_free.?(self.pcre);
     }
 
-    pub fn matches(self: Regex, s: []const u8) !bool {
+    /// Returns the start and end index of the match if any, otherwise null.
+    pub fn matches(self: Regex, s: []const u8, options: Options) ExecError!?Capture {
         var ovector: [3]c_int = undefined;
-        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, 0, &ovector, 3);
-        if (result < 0)
-            return error.TODO;
-        return result > 0;
+        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, options.compile(), &ovector, 3);
+        switch (result) {
+            c.PCRE_ERROR_NOMATCH => return null,
+            else => {},
+        }
+        if (result <= 0)
+            return error.ExecError; // TODO: should clarify
+        return Capture{ .start = @intCast(usize, ovector[0]), .end = @intCast(usize, ovector[1]) };
     }
 
-    pub fn captures(self: Regex, allocator: *std.mem.Allocator, s: []const u8) !?[]Capture {
-        // (n+1)*3
+    /// Searches for capture groups in s. The 0th Capture of the result is the entire match.
+    pub fn captures(self: Regex, allocator: *std.mem.Allocator, s: []const u8, options: Options) (ExecError || std.mem.Allocator.Error)!?[]Capture {
         var ovecsize = (self.capture_count + 1) * 3;
         var ovector: []c_int = try allocator.alloc(c_int, ovecsize);
         defer allocator.free(ovector);
-        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, 0, &ovector[0], @intCast(c_int, ovecsize));
-        if (result < 0)
-            return error.TODO;
-        if (result == 0)
-            return null;
+
+        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, options.compile(), &ovector[0], @intCast(c_int, ovecsize));
+
+        switch (result) {
+            c.PCRE_ERROR_NOMATCH => return null,
+            else => {},
+        }
+        if (result <= 0)
+            return error.ExecError; // TODO: should clarify
+
         var caps: []Capture = try allocator.alloc(Capture, @intCast(usize, result));
+        errdefer allocator.free(caps);
         for (caps) |*cap, i| {
             cap.* = .{
-                .start = ovector[i * 2],
-                .end = ovector[i * 2 + 1],
+                .start = @intCast(usize, ovector[i * 2]),
+                .end = @intCast(usize, ovector[i * 2 + 1]),
             };
         }
         return caps;
@@ -141,35 +161,41 @@ pub const Regex = struct {
 };
 
 pub const Capture = struct {
-    start: c_int,
-    end: c_int,
+    start: usize,
+    end: usize,
 };
 
-test "basic add functionality" {
-    {
-        const regex = try Regex.compile("hello", .{});
-        defer regex.deinit();
-        testing.expect(try regex.matches("hello"));
-    }
+test "compiles" {
+    const regex = Regex.compile("(", .{});
+    testing.expectError(error.CompileError, regex);
+}
 
-    {
-        const regex = try Regex.compile("(a+)b(c+)", .{});
-        defer regex.deinit();
-        const captures = (try regex.captures(std.testing.allocator, "aaaaabcc")).?;
-        defer std.testing.allocator.free(captures);
-        testing.expectEqualSlices(Capture, &[_]Capture{
-            .{
-                .start = 0,
-                .end = 8,
-            },
-            .{
-                .start = 0,
-                .end = 5,
-            },
-            .{
-                .start = 6,
-                .end = 8,
-            },
-        }, captures);
-    }
+test "matches" {
+    const regex = try Regex.compile("hello", .{});
+    defer regex.deinit();
+    testing.expect((try regex.matches("hello", .{})) != null);
+    testing.expect((try regex.matches("yes hello", .{})) != null);
+    testing.expect((try regex.matches("yes hello", .{ .Anchored = true })) == null);
+}
+
+test "captures" {
+    const regex = try Regex.compile("(a+)b(c+)", .{});
+    defer regex.deinit();
+    testing.expect((try regex.captures(std.testing.allocator, "a", .{})) == null);
+    const captures = (try regex.captures(std.testing.allocator, "aaaaabcc", .{})).?;
+    defer std.testing.allocator.free(captures);
+    testing.expectEqualSlices(Capture, &[_]Capture{
+        .{
+            .start = 0,
+            .end = 8,
+        },
+        .{
+            .start = 0,
+            .end = 5,
+        },
+        .{
+            .start = 6,
+            .end = 8,
+        },
+    }, captures);
 }
