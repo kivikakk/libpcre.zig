@@ -1,0 +1,175 @@
+const std = @import("std");
+const testing = std.testing;
+
+const c = @cImport({
+    @cInclude("pcre.h");
+});
+
+pub const Options = struct {
+    Anchored: bool = false,
+    AutoCallout: bool = false,
+    BsrAnycrlf: bool = false,
+    BsrUnicode: bool = false,
+    Caseless: bool = false,
+    DollarEndonly: bool = false,
+    Dotall: bool = false,
+    Dupnames: bool = false,
+    Extended: bool = false,
+    Extra: bool = false,
+    Firstline: bool = false,
+    JavascriptCompat: bool = false,
+    Multiline: bool = false,
+    NeverUtf: bool = false,
+    NewlineAny: bool = false,
+    NewlineAnycrlf: bool = false,
+    NewlineCr: bool = false,
+    NewlineCrlf: bool = false,
+    NewlineLf: bool = false,
+    NoAutoCapture: bool = false,
+    NoAutoPossess: bool = false,
+    NoStartOptimize: bool = false,
+    NoUtf16Check: bool = false,
+    NoUtf32Check: bool = false,
+    NoUtf8Check: bool = false,
+    Ucp: bool = false,
+    Ungreedy: bool = false,
+    Utf16: bool = false,
+    Utf32: bool = false,
+    Utf8: bool = false,
+
+    fn compile(options: Options) c_int {
+        var r: c_int = 0;
+        if (options.Anchored) r |= c.PCRE_ANCHORED;
+        if (options.AutoCallout) r |= c.PCRE_AUTO_CALLOUT;
+        if (options.BsrAnycrlf) r |= c.PCRE_BSR_ANYCRLF;
+        if (options.BsrUnicode) r |= c.PCRE_BSR_UNICODE;
+        if (options.Caseless) r |= c.PCRE_CASELESS;
+        if (options.DollarEndonly) r |= c.PCRE_DOLLAR_ENDONLY;
+        if (options.Dotall) r |= c.PCRE_DOTALL;
+        if (options.Dupnames) r |= c.PCRE_DUPNAMES;
+        if (options.Extended) r |= c.PCRE_EXTENDED;
+        if (options.Extra) r |= c.PCRE_EXTRA;
+        if (options.Firstline) r |= c.PCRE_FIRSTLINE;
+        if (options.JavascriptCompat) r |= c.PCRE_JAVASCRIPT_COMPAT;
+        if (options.Multiline) r |= c.PCRE_MULTILINE;
+        if (options.NeverUtf) r |= c.PCRE_NEVER_UTF;
+        if (options.NewlineAny) r |= c.PCRE_NEWLINE_ANY;
+        if (options.NewlineAnycrlf) r |= c.PCRE_NEWLINE_ANYCRLF;
+        if (options.NewlineCr) r |= c.PCRE_NEWLINE_CR;
+        if (options.NewlineCrlf) r |= c.PCRE_NEWLINE_CRLF;
+        if (options.NewlineLf) r |= c.PCRE_NEWLINE_LF;
+        if (options.NoAutoCapture) r |= c.PCRE_NO_AUTO_CAPTURE;
+        if (options.NoAutoPossess) r |= c.PCRE_NO_AUTO_POSSESS;
+        if (options.NoStartOptimize) r |= c.PCRE_NO_START_OPTIMIZE;
+        if (options.NoUtf16Check) r |= c.PCRE_NO_UTF16_CHECK;
+        if (options.NoUtf32Check) r |= c.PCRE_NO_UTF32_CHECK;
+        if (options.NoUtf8Check) r |= c.PCRE_NO_UTF8_CHECK;
+        if (options.Ucp) r |= c.PCRE_UCP;
+        if (options.Ungreedy) r |= c.PCRE_UNGREEDY;
+        if (options.Utf16) r |= c.PCRE_UTF16;
+        if (options.Utf32) r |= c.PCRE_UTF32;
+        if (options.Utf8) r |= c.PCRE_UTF8;
+        return r;
+    }
+};
+
+pub const Regex = struct {
+    pcre: *c.pcre,
+    pcre_extra: ?*c.pcre_extra,
+    capture_count: usize,
+    leak_check: *u8,
+
+    pub fn compile(
+        pattern: [:0]const u8,
+        options: Options,
+    ) !Regex {
+        var err: [*c]const u8 = undefined;
+        var err_offset: c_int = undefined;
+
+        const pcre = c.pcre_compile(pattern, options.compile(), &err, &err_offset, 0) orelse return error.TODO;
+        errdefer c.pcre_free.?(pcre);
+
+        const pcre_extra = c.pcre_study(pcre, 0, &err);
+        if (err != 0) return error.TODO;
+        errdefer c.pcre_free_study(pcre_extra);
+
+        var capture_count: c_int = undefined;
+        var fullinfo_rc = c.pcre_fullinfo(pcre, pcre_extra, c.PCRE_INFO_CAPTURECOUNT, &capture_count);
+        if (fullinfo_rc != 0) return error.TODO;
+
+        return Regex{
+            .pcre = pcre,
+            .pcre_extra = pcre_extra,
+            .capture_count = @intCast(usize, capture_count),
+            .leak_check = try std.testing.allocator.create(u8),
+        };
+    }
+
+    pub fn deinit(self: Regex) void {
+        std.testing.allocator.destroy(self.leak_check);
+        c.pcre_free_study(self.pcre_extra);
+        c.pcre_free.?(self.pcre);
+    }
+
+    pub fn matches(self: Regex, s: []const u8) !bool {
+        var ovector: [3]c_int = undefined;
+        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, 0, &ovector, 3);
+        if (result < 0)
+            return error.TODO;
+        return result > 0;
+    }
+
+    pub fn captures(self: Regex, allocator: *std.mem.Allocator, s: []const u8) !?[]Capture {
+        // (n+1)*3
+        var ovecsize = (self.capture_count + 1) * 3;
+        var ovector: []c_int = try allocator.alloc(c_int, ovecsize);
+        defer allocator.free(ovector);
+        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, 0, &ovector[0], @intCast(c_int, ovecsize));
+        if (result < 0)
+            return error.TODO;
+        if (result == 0)
+            return null;
+        var caps: []Capture = try allocator.alloc(Capture, @intCast(usize, result));
+        for (caps) |*cap, i| {
+            cap.* = .{
+                .start = ovector[i * 2],
+                .end = ovector[i * 2 + 1],
+            };
+        }
+        return caps;
+    }
+};
+
+pub const Capture = struct {
+    start: c_int,
+    end: c_int,
+};
+
+test "basic add functionality" {
+    {
+        const regex = try Regex.compile("hello", .{});
+        defer regex.deinit();
+        testing.expect(try regex.matches("hello"));
+    }
+
+    {
+        const regex = try Regex.compile("(a+)b(c+)", .{});
+        defer regex.deinit();
+        const captures = (try regex.captures(std.testing.allocator, "aaaaabcc")).?;
+        defer std.testing.allocator.free(captures);
+        testing.expectEqualSlices(Capture, &[_]Capture{
+            .{
+                .start = 0,
+                .end = 8,
+            },
+            .{
+                .start = 0,
+                .end = 5,
+            },
+            .{
+                .start = 6,
+                .end = 8,
+            },
+        }, captures);
+    }
+}
