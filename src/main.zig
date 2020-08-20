@@ -73,19 +73,21 @@ pub const Options = struct {
     }
 };
 
+// pub const Compile2Error = enum(c_int) {};
+
 pub const Regex = struct {
     pcre: *c.pcre,
     pcre_extra: ?*c.pcre_extra,
     capture_count: usize,
     leak_check: *u8,
 
-    pub const CompileError = error{CompileError};
-    pub const ExecError = error{ExecError};
+    pub const CompileError = error{CompileError} || std.mem.Allocator.Error;
+    pub const ExecError = error{ExecError} || std.mem.Allocator.Error;
 
     pub fn compile(
         pattern: [:0]const u8,
         options: Options,
-    ) (CompileError || std.mem.Allocator.Error)!Regex {
+    ) CompileError!Regex {
         var err: [*c]const u8 = undefined;
         var err_offset: c_int = undefined;
 
@@ -126,10 +128,15 @@ pub const Regex = struct {
         var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @intCast(c_int, s.len), 0, options.compile(), &ovector, 3);
         switch (result) {
             c.PCRE_ERROR_NOMATCH => return null,
+            c.PCRE_ERROR_NOMEMORY => return error.OutOfMemory,
             else => {},
         }
-        if (result <= 0)
+        // result == 0 implies there were capture groups that didn't fit into ovector.
+        // We don't care.
+        if (result < 0) {
+            std.debug.print("pcre_exec: {}\n", .{result});
             return error.ExecError; // TODO: should clarify
+        }
         return Capture{ .start = @intCast(usize, ovector[0]), .end = @intCast(usize, ovector[1]) };
     }
 
@@ -143,10 +150,15 @@ pub const Regex = struct {
 
         switch (result) {
             c.PCRE_ERROR_NOMATCH => return null,
+            c.PCRE_ERROR_NOMEMORY => return error.OutOfMemory,
             else => {},
         }
-        if (result <= 0)
+        // 0 implies we didn't allocate enough ovector, and should never happen.
+        std.debug.assert(result != 0);
+        if (result < 0) {
+            std.debug.print("pcre_exec: {}\n", .{result});
             return error.ExecError; // TODO: should clarify
+        }
 
         var caps: []Capture = try allocator.alloc(Capture, @intCast(usize, result));
         errdefer allocator.free(caps);
