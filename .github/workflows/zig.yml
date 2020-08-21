@@ -35,7 +35,7 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - run: vcpkg install pcre --triplet x64-windows
+      - run: vcpkg install pcre --triplet x64-windows-static
       - run: zig build
       - run: zig build test
   lint:

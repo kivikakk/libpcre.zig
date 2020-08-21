@@ -18,7 +18,7 @@ pub fn build(b: *std.build.Builder) !void {
 fn addCommonRequirements(exe: *std.build.LibExeObjStep) !void {
     exe.linkLibC();
     if (std.builtin.os.tag == .windows) {
-        try exe.addVcpkgPaths(.Dynamic);
+        try exe.addVcpkgPaths(.Static);
         exe.linkSystemLibrary("pcre");
     } else {
         exe.linkSystemLibrary("libpcre");
