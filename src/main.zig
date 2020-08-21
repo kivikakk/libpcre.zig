@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 const testing = std.testing;
 
 const c = @cImport({
@@ -141,7 +142,7 @@ pub const Regex = struct {
     }
 
     /// Searches for capture groups in s. The 0th Capture of the result is the entire match.
-    pub fn captures(self: Regex, allocator: *std.mem.Allocator, s: []const u8, options: Options) (ExecError || std.mem.Allocator.Error)!?[]Capture {
+    pub fn captures(self: Regex, allocator: *std.mem.Allocator, s: []const u8, options: Options) (ExecError || std.mem.Allocator.Error)!?[]?Capture {
         var ovecsize = (self.capture_count + 1) * 3;
         var ovector: []c_int = try allocator.alloc(c_int, ovecsize);
         defer allocator.free(ovector);
@@ -160,13 +161,20 @@ pub const Regex = struct {
             return error.ExecError; // TODO: should clarify
         }
 
-        var caps: []Capture = try allocator.alloc(Capture, @intCast(usize, result));
+        var caps: []?Capture = try allocator.alloc(?Capture, @intCast(usize, self.capture_count + 1));
         errdefer allocator.free(caps);
         for (caps) |*cap, i| {
-            cap.* = .{
-                .start = @intCast(usize, ovector[i * 2]),
-                .end = @intCast(usize, ovector[i * 2 + 1]),
-            };
+            if (i >= result) {
+                cap.* = null;
+            } else if (ovector[i * 2] == -1) {
+                assert(ovector[i * 2 + 1] == -1);
+                cap.* = null;
+            } else {
+                cap.* = .{
+                    .start = @intCast(usize, ovector[i * 2]),
+                    .end = @intCast(usize, ovector[i * 2 + 1]),
+                };
+            }
         }
         return caps;
     }
@@ -196,7 +204,7 @@ test "captures" {
     testing.expect((try regex.captures(std.testing.allocator, "a", .{})) == null);
     const captures = (try regex.captures(std.testing.allocator, "aaaaabcc", .{})).?;
     defer std.testing.allocator.free(captures);
-    testing.expectEqualSlices(Capture, &[_]Capture{
+    testing.expectEqualSlices(?Capture, &[_]?Capture{
         .{
             .start = 0,
             .end = 8,
@@ -209,5 +217,45 @@ test "captures" {
             .start = 6,
             .end = 8,
         },
+    }, captures);
+}
+
+test "missing capture group" {
+    const regex = try Regex.compile("abc(def)(ghi)?(jkl)", .{});
+    defer regex.deinit();
+    const captures = (try regex.captures(std.testing.allocator, "abcdefjkl", .{})).?;
+    defer std.testing.allocator.free(captures);
+    testing.expectEqualSlices(?Capture, &[_]?Capture{
+        .{
+            .start = 0,
+            .end = 9,
+        },
+        .{
+            .start = 3,
+            .end = 6,
+        },
+        null,
+        .{
+            .start = 6,
+            .end = 9,
+        },
+    }, captures);
+}
+
+test "missing capture group at end of capture list" {
+    const regex = try Regex.compile("abc(def)(ghi)?jkl", .{});
+    defer regex.deinit();
+    const captures = (try regex.captures(std.testing.allocator, "abcdefjkl", .{})).?;
+    defer std.testing.allocator.free(captures);
+    testing.expectEqualSlices(?Capture, &[_]?Capture{
+        .{
+            .start = 0,
+            .end = 9,
+        },
+        .{
+            .start = 3,
+            .end = 6,
+        },
+        null,
     }, captures);
 }
