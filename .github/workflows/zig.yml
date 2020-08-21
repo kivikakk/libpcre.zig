@@ -35,6 +35,7 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
+      - run: vcpkg install pcre
       - run: zig build
       - run: zig build test
   lint:
