@@ -23,7 +23,7 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - run: brew install pcre
+      - run: brew install pkg-config pcre
       - run: zig build
       - run: zig build test
   test-windows:
