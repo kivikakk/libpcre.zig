@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
     const mode = b.standardReleaseOptions();
     const lib = b.addStaticLibrary("libpcre.zig", "src/main.zig");
     lib.setBuildMode(mode);
