@@ -1,18 +1,24 @@
-const Builder = @import("std").build.Builder;
+const std = @import("std");
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
     const lib = b.addStaticLibrary("libpcre.zig", "src/main.zig");
     lib.setBuildMode(mode);
-    lib.linkLibC();
-    lib.linkSystemLibrary("libpcre");
+    try addCommonRequirements(lib);
     lib.install();
 
     var main_tests = b.addTest("src/main.zig");
-    main_tests.linkLibC();
-    main_tests.linkSystemLibrary("libpcre");
+    try addCommonRequirements(main_tests);
     main_tests.setBuildMode(mode);
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
+}
+
+fn addCommonRequirements(exe: *std.build.LibExeObjStep) !void {
+    exe.linkLibC();
+    if (std.builtin.os.tag == .windows) {
+        try exe.addVcpkgPaths(.Dynamic);
+    }
+    exe.linkSystemLibrary("libpcre");
 }
