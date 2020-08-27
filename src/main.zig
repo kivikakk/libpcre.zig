@@ -80,7 +80,6 @@ pub const Regex = struct {
     pcre: *c.pcre,
     pcre_extra: ?*c.pcre_extra,
     capture_count: usize,
-    leak_check: *u8,
 
     pub const CompileError = error{CompileError} || std.mem.Allocator.Error;
     pub const ExecError = error{ExecError} || std.mem.Allocator.Error;
@@ -113,12 +112,10 @@ pub const Regex = struct {
             .pcre = pcre,
             .pcre_extra = pcre_extra,
             .capture_count = @intCast(usize, capture_count),
-            .leak_check = try std.testing.allocator.create(u8),
         };
     }
 
     pub fn deinit(self: Regex) void {
-        std.testing.allocator.destroy(self.leak_check);
         c.pcre_free_study(self.pcre_extra);
         c.pcre_free.?(self.pcre);
     }
