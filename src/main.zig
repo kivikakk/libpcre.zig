@@ -92,14 +92,14 @@ pub const Regex = struct {
         var err_offset: c_int = undefined;
 
         const pcre = c.pcre_compile(pattern, options.compile(), &err, &err_offset, 0) orelse {
-            std.debug.warn("pcre_compile (at {}): {}\n", .{ err_offset, @ptrCast([*:0]const u8, err) });
+            std.debug.warn("pcre_compile (at {}): {s}\n", .{ err_offset, @ptrCast([*:0]const u8, err) });
             return error.CompileError;
         };
         errdefer c.pcre_free.?(pcre);
 
         const pcre_extra = c.pcre_study(pcre, 0, &err);
         if (err != 0) {
-            std.debug.warn("pcre_study: {}\n", .{@ptrCast([*:0]const u8, err)});
+            std.debug.warn("pcre_study: {s}\n", .{@ptrCast([*:0]const u8, err)});
             return error.CompileError;
         }
         errdefer c.pcre_free_study(pcre_extra);
