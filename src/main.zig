@@ -184,24 +184,24 @@ pub const Capture = struct {
 
 test "compiles" {
     const regex = Regex.compile("(", .{});
-    testing.expectError(error.CompileError, regex);
+    try testing.expectError(error.CompileError, regex);
 }
 
 test "matches" {
     const regex = try Regex.compile("hello", .{});
     defer regex.deinit();
-    testing.expect((try regex.matches("hello", .{})) != null);
-    testing.expect((try regex.matches("yes hello", .{})) != null);
-    testing.expect((try regex.matches("yes hello", .{ .Anchored = true })) == null);
+    try testing.expect((try regex.matches("hello", .{})) != null);
+    try testing.expect((try regex.matches("yes hello", .{})) != null);
+    try testing.expect((try regex.matches("yes hello", .{ .Anchored = true })) == null);
 }
 
 test "captures" {
     const regex = try Regex.compile("(a+)b(c+)", .{});
     defer regex.deinit();
-    testing.expect((try regex.captures(std.testing.allocator, "a", .{})) == null);
+    try testing.expect((try regex.captures(std.testing.allocator, "a", .{})) == null);
     const captures = (try regex.captures(std.testing.allocator, "aaaaabcc", .{})).?;
     defer std.testing.allocator.free(captures);
-    testing.expectEqualSlices(?Capture, &[_]?Capture{
+    try testing.expectEqualSlices(?Capture, &[_]?Capture{
         .{
             .start = 0,
             .end = 8,
@@ -222,7 +222,7 @@ test "missing capture group" {
     defer regex.deinit();
     const captures = (try regex.captures(std.testing.allocator, "abcdefjkl", .{})).?;
     defer std.testing.allocator.free(captures);
-    testing.expectEqualSlices(?Capture, &[_]?Capture{
+    try testing.expectEqualSlices(?Capture, &[_]?Capture{
         .{
             .start = 0,
             .end = 9,
@@ -244,7 +244,7 @@ test "missing capture group at end of capture list" {
     defer regex.deinit();
     const captures = (try regex.captures(std.testing.allocator, "abcdefjkl", .{})).?;
     defer std.testing.allocator.free(captures);
-    testing.expectEqualSlices(?Capture, &[_]?Capture{
+    try testing.expectEqualSlices(?Capture, &[_]?Capture{
         .{
             .start = 0,
             .end = 9,
