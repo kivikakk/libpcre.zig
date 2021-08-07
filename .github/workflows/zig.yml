@@ -40,10 +40,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - uses: goto-bus-stop/setup-zig@v1.0.0
+      - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - uses: nektro/actions-setup-zigmod@v1
+      - uses: nektro/actions-setup-zigmod@v1.0.0
       - run: zigmod fetch
       - run: c:; cd \vcpkg; git pull; .\bootstrap-vcpkg.bat
       - run: vcpkg integrate install
