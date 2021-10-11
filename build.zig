@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.build.Builder) !void {
     const mode = b.standardReleaseOptions();
@@ -21,7 +22,7 @@ pub fn build(b: *std.build.Builder) !void {
 
 pub fn linkPcre(exe: *std.build.LibExeObjStep) !void {
     exe.linkLibC();
-    if (std.builtin.os.tag == .windows) {
+    if (builtin.os.tag == .windows) {
         try exe.addVcpkgPaths(.static);
         exe.linkSystemLibrary("pcre");
     } else {
