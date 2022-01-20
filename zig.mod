@@ -6,3 +6,7 @@ description: Zig bindings to libpcre
 vcpkg: true
 dependencies:
   - src: system_lib pcre
+    only_os: windows
+
+  - src: system_lib libpcre
+    except_os: windows
