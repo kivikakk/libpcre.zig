@@ -3,10 +3,5 @@ name: libpcre
 main: src/main.zig
 license: MIT
 description: Zig bindings to libpcre
-vcpkg: true
 dependencies:
-  - src: system_lib pcre
-    only_os: windows
-
-  - src: system_lib libpcre
-    except_os: windows
+  - src: git https://github.com/nektro/pcre-8.45
