@@ -91,7 +91,7 @@ pub const Regex = struct {
         var err: [*c]const u8 = undefined;
         var err_offset: c_int = undefined;
 
-        const pcre = c.pcre_compile(pattern, options.compile(), &err, &err_offset, 0) orelse {
+        const pcre = c.pcre_compile(pattern.ptr, options.compile(), &err, &err_offset, 0) orelse {
             std.log.warn("pcre_compile (at {}): {s}\n", .{ err_offset, @ptrCast([*:0]const u8, err) });
             return error.CompileError;
         };
