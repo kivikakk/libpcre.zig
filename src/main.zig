@@ -160,7 +160,7 @@ pub const Regex = struct {
 
         var caps: []?Capture = try allocator.alloc(?Capture, @intCast(usize, self.capture_count + 1));
         errdefer allocator.free(caps);
-        for (caps) |*cap, i| {
+        for (caps, 0..) |*cap, i| {
             if (i >= result) {
                 cap.* = null;
             } else if (ovector[i * 2] == -1) {
