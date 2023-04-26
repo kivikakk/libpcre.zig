@@ -2,19 +2,25 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn build(b: *std.build.Builder) !void {
-    const mode = b.standardReleaseOptions();
+    const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const lib = b.addStaticLibrary("libpcre.zig", "src/main.zig");
-    lib.setBuildMode(mode);
-    lib.setTarget(target);
+    const lib = b.addStaticLibrary(.{
+        .name = "libpcre.zig",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
     try linkPcre(lib);
-    lib.install();
+    b.installArtifact(lib);
 
-    var main_tests = b.addTest("src/main.zig");
+    var main_tests = b.addTest(.{
+        .name = "main_tests",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .optimize = optimize,
+        .target = target,
+    });
     try linkPcre(main_tests);
-    main_tests.setBuildMode(mode);
-    main_tests.setTarget(target);
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
