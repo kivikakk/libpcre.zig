@@ -14,7 +14,7 @@ pub fn build(b: *std.build.Builder) !void {
     try linkPcre(lib);
     b.installArtifact(lib);
 
-    var main_tests = b.addTest(.{
+    const main_tests = b.addTest(.{
         .name = "main_tests",
         .root_source_file = .{ .path = "src/main.zig" },
         .optimize = optimize,
@@ -22,16 +22,17 @@ pub fn build(b: *std.build.Builder) !void {
     });
     try linkPcre(main_tests);
 
+    const main_tests_run = b.addRunArtifact(main_tests);
+    main_tests_run.step.dependOn(&main_tests.step);
+
     const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&main_tests.step);
+    test_step.dependOn(&main_tests_run.step);
 }
 
 pub fn linkPcre(exe: *std.build.LibExeObjStep) !void {
     exe.linkLibC();
     if (builtin.os.tag == .windows) {
         try exe.addVcpkgPaths(.static);
-        exe.linkSystemLibrary("pcre");
-    } else {
-        exe.linkSystemLibrary("libpcre");
     }
+    exe.linkSystemLibrary("pcre");
 }
