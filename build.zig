@@ -5,6 +5,10 @@ pub fn build(b: *std.build.Builder) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
+    _ = b.addModule("libpcre", .{
+        .source_file = .{ .path = "src/main.zig" },
+    });
+
     const lib = b.addStaticLibrary(.{
         .name = "libpcre.zig",
         .root_source_file = .{ .path = "src/main.zig" },
