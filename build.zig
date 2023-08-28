@@ -15,7 +15,7 @@ pub fn build(b: *std.build.Builder) !void {
         .target = target,
         .optimize = optimize,
     });
-    try linkPcre(lib);
+    try linkPcre(b, lib);
     b.installArtifact(lib);
 
     const main_tests = b.addTest(.{
@@ -24,7 +24,7 @@ pub fn build(b: *std.build.Builder) !void {
         .optimize = optimize,
         .target = target,
     });
-    try linkPcre(main_tests);
+    try linkPcre(b, main_tests);
 
     const main_tests_run = b.addRunArtifact(main_tests);
     main_tests_run.step.dependOn(&main_tests.step);
@@ -33,10 +33,22 @@ pub fn build(b: *std.build.Builder) !void {
     test_step.dependOn(&main_tests_run.step);
 }
 
-pub fn linkPcre(exe: *std.build.LibExeObjStep) !void {
+pub fn linkPcre(b: *std.build.Builder, exe: *std.build.LibExeObjStep) !void {
     exe.linkLibC();
     if (builtin.os.tag == .windows) {
         try exe.addVcpkgPaths(.static);
     }
-    exe.linkSystemLibrary("pcre");
+    if (builtin.os.tag == .macos) {
+        // If `pkg-config libpcre` doesn't error, linkSystemLibrary("libpcre") will succeed.
+        // If it errors, try "pcre", as either it will hit a .pc by that name, or the fallthru
+        // `-lpcre` and standard includes will work.  (Or it's not installed.)
+        var code: u8 = undefined;
+        if (b.execAllowFail(&[_][]const u8{ "pkg-config", "libpcre" }, &code, .Ignore)) |_| {
+            exe.linkSystemLibrary("libpcre");
+        } else |_| {
+            exe.linkSystemLibrary("pcre");
+        }
+    } else {
+        exe.linkSystemLibrary("pcre");
+    }
 }
