@@ -9,10 +9,22 @@
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs) lib;
     in rec {
-      formatter = pkgs.alejandra;
+      packages.default = pkgs.stdenv.mkDerivation {
+        name = "libpcre.zig-build";
 
-      devShells.default = pkgs.mkShell {
+        src = ./.;
+
         nativeBuildInputs = [pkgs.zig pkgs.pcre];
+
+        buildPhase = ''
+          export ZIG_GLOBAL_CACHE_DIR="$TMPDIR/zig"
+          zig build test
+          touch $out
+        '';
+
+        dontInstall = true;
       };
+
+      formatter = pkgs.alejandra;
     });
 }

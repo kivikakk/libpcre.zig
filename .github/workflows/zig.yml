@@ -5,35 +5,22 @@ on:
   pull_request:
 
 jobs:
-  test-linux:
-    runs-on: ubuntu-latest
+  test-nix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: 0.11.0
-      - run: zig build
-      - run: zig build test
-  test-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: 0.11.0
-      - run: brew install pcre
-      - run: zig build
-      - run: zig build test
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+      - name: Run the Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+      - run: nix build -L
   test-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v3
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: 0.11.0
@@ -45,10 +32,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: 0.11.0
-      - run: zig fmt --check build.zig src/*.zig
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+      - name: Run the Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+      - run: nix develop --command zig fmt --check src/*.zig
