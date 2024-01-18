@@ -1,4 +1,4 @@
-# libpcre.zig
+# [libpcre.zig](https://hrzn.ee/kivikakk/libpcre.zig)
 
 ![Build status](https://github.com/kivikakk/libpcre.zig/workflows/Zig/badge.svg)
 
