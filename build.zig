@@ -24,6 +24,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .target = target,
     });
+    main_tests.linkLibC();
     try linkPcre(b, &main_tests.root_module);
 
     const main_tests_run = b.addRunArtifact(main_tests);
@@ -34,9 +35,6 @@ pub fn build(b: *std.Build) !void {
 }
 
 pub fn linkPcre(b: *std.Build, mod: *std.Build.Module) !void {
-    if (builtin.os.tag == .windows) {
-        try mod.addVcpkgPaths(.static);
-    }
     if (builtin.os.tag == .macos) {
         // If `pkg-config libpcre` doesn't error, linkSystemLibrary("libpcre") will succeed.
         // If it errors, try "pcre", as either it will hit a .pc by that name, or the fallthru

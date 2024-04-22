@@ -8,7 +8,7 @@ jobs:
   test-nix:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -17,18 +17,6 @@ jobs:
       - name: Run the Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v2
       - run: nix build -L
-  test-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: 0.11.0
-      - run: c:; cd \vcpkg; git pull; .\bootstrap-vcpkg.bat
-      - run: vcpkg integrate install
-      - run: vcpkg install pcre --triplet x64-windows-static
-      - run: zig build -Dtarget=x86_64-windows-msvc
-      - run: zig build -Dtarget=x86_64-windows-msvc test
   lint:
     runs-on: ubuntu-latest
     steps:
