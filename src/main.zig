@@ -105,7 +105,7 @@ pub const Regex = struct {
         errdefer c.pcre_free_study(pcre_extra);
 
         var capture_count: c_int = undefined;
-        var fullinfo_rc = c.pcre_fullinfo(pcre, pcre_extra, c.PCRE_INFO_CAPTURECOUNT, &capture_count);
+        const fullinfo_rc = c.pcre_fullinfo(pcre, pcre_extra, c.PCRE_INFO_CAPTURECOUNT, &capture_count);
         if (fullinfo_rc != 0) @panic("could not request PCRE_INFO_CAPTURECOUNT");
 
         return Regex{
@@ -123,7 +123,7 @@ pub const Regex = struct {
     /// Returns the start and end index of the match if any, otherwise null.
     pub fn matches(self: Regex, s: []const u8, options: Options) ExecError!?Capture {
         var ovector: [3]c_int = undefined;
-        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @as(c_int, @intCast(s.len)), 0, options.compile(), &ovector, 3);
+        const result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @as(c_int, @intCast(s.len)), 0, options.compile(), &ovector, 3);
         switch (result) {
             c.PCRE_ERROR_NOMATCH => return null,
             c.PCRE_ERROR_NOMEMORY => return error.OutOfMemory,
@@ -140,11 +140,11 @@ pub const Regex = struct {
 
     /// Searches for capture groups in s. The 0th Capture of the result is the entire match.
     pub fn captures(self: Regex, allocator: std.mem.Allocator, s: []const u8, options: Options) (ExecError || std.mem.Allocator.Error)!?[]?Capture {
-        var ovecsize = (self.capture_count + 1) * 3;
+        const ovecsize = (self.capture_count + 1) * 3;
         var ovector: []c_int = try allocator.alloc(c_int, ovecsize);
         defer allocator.free(ovector);
 
-        var result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @as(c_int, @intCast(s.len)), 0, options.compile(), &ovector[0], @as(c_int, @intCast(ovecsize)));
+        const result = c.pcre_exec(self.pcre, self.pcre_extra, s.ptr, @as(c_int, @intCast(s.len)), 0, options.compile(), &ovector[0], @as(c_int, @intCast(ovecsize)));
 
         switch (result) {
             c.PCRE_ERROR_NOMATCH => return null,
@@ -158,7 +158,7 @@ pub const Regex = struct {
             return error.ExecError; // TODO: should clarify
         }
 
-        var caps: []?Capture = try allocator.alloc(?Capture, @as(usize, @intCast(self.capture_count + 1)));
+        const caps: []?Capture = try allocator.alloc(?Capture, @as(usize, @intCast(self.capture_count + 1)));
         errdefer allocator.free(caps);
         for (caps, 0..) |*cap, i| {
             if (i >= result) {
