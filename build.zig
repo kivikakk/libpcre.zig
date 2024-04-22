@@ -33,10 +33,9 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&main_tests_run.step);
 }
 
-pub fn linkPcre(b: *std.Build, exe: *std.Build.Step.Compile) !void {
-    exe.linkLibC();
+pub fn linkPcre(b: *std.Build, mod: *std.Build.Module) !void {
     if (builtin.os.tag == .windows) {
-        try exe.addVcpkgPaths(.static);
+        try mod.addVcpkgPaths(.static);
     }
     if (builtin.os.tag == .macos) {
         // If `pkg-config libpcre` doesn't error, linkSystemLibrary("libpcre") will succeed.
@@ -44,11 +43,11 @@ pub fn linkPcre(b: *std.Build, exe: *std.Build.Step.Compile) !void {
         // `-lpcre` and standard includes will work.  (Or it's not installed.)
         var code: u8 = undefined;
         if (b.runAllowFail(&[_][]const u8{ "pkg-config", "libpcre" }, &code, .Inherit)) |_| {
-            exe.linkSystemLibrary("libpcre");
+            mod.linkSystemLibrary("libpcre", .{});
         } else |_| {
-            exe.linkSystemLibrary("pcre");
+            mod.linkSystemLibrary("pcre", .{});
         }
     } else {
-        exe.linkSystemLibrary("pcre");
+        mod.linkSystemLibrary("pcre", .{});
     }
 }
