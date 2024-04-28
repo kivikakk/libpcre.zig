@@ -14,4 +14,6 @@ Supported operating systems:
 
 * Linux: `apt install pkg-config libpcre3-dev`
 * macOS: `brew install pkg-config pcre`
-* Windows: install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows), `vcpkg integrate install`, `vcpkg install pcre --triplet x64-windows-static`
+* ~~Windows: install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows), `vcpkg integrate install`, `vcpkg install pcre --triplet x64-windows-static`~~
+
+  Zig doesn't have vcpkg integration any more. Suggestions welcome!
