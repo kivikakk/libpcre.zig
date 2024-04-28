@@ -1,6 +1,6 @@
-# [libpcre.zig](https://hrzn.ee/kivikakk/libpcre.zig)
+# [libpcre.zig](https://github.com/kivikakk/libpcre.zig)
 
-![Build status](https://github.com/kivikakk/libpcre.zig/workflows/Zig/badge.svg)
+![Build status](https://github.com/kivikakk/libpcre.zig/workflows/build/badge.svg)
 
 To build, add to your `build.zig`:
 
