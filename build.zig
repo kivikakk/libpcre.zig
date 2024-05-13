@@ -5,9 +5,12 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    _ = b.addModule("libpcre", .{
+    const mod = b.addModule("libpcre", .{
         .root_source_file = b.path("src/main.zig"),
+        .optimize = optimize,
+        .target = target,
     });
+    try linkPcre(b, mod);
 
     const lib = b.addStaticLibrary(.{
         .name = "libpcre.zig",
