@@ -5,13 +5,16 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    _ = b.addModule("libpcre", .{
-        .root_source_file = .{ .path = "src/main.zig" },
+    const mod = b.addModule("libpcre", .{
+        .root_source_file = b.path("src/main.zig"),
+        .optimize = optimize,
+        .target = target,
     });
+    try linkPcre(b, mod);
 
     const lib = b.addStaticLibrary(.{
         .name = "libpcre.zig",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -20,7 +23,7 @@ pub fn build(b: *std.Build) !void {
 
     const main_tests = b.addTest(.{
         .name = "main_tests",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
         .target = target,
     });
