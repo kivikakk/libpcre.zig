@@ -3,8 +3,8 @@
     .version = "0.1.0",
     .dependencies = .{
         .pcre = .{
-            .url = "https://github.com/kivikakk/pcre-8.45/archive/812524706afd3a333c1fb31100e046f167740ac3.tar.gz",
-            .hash = "1220ac1f2dc0def06527baacecdacf3daae723bf0b439356ee5db6868ca255412b59",
+            .url = "https://github.com/kivikakk/pcre-8.45/archive/6b7cf03e4896c240c4baba2d6497e4be3ee1e22c.tar.gz",
+            .hash = "12203da4b45a5553c5a5f444b58378562cb4bea00e896426d82bd3164bfce811c5ab",
         },
     },
     .minimum_zig_version = "0.12.0",
