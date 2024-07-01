@@ -1,7 +1,12 @@
 .{
     .name = "libpcre.zig",
     .version = "0.1.0",
-    .dependencies = .{},
+    .dependencies = .{
+        .pcre = .{
+            .url = "https://github.com/lun-4/pcre-8.45/archive/999bbb603e2d4b05acfbdd82df638eb6664a95c7.tar.gz",
+            .hash = "1220e7e5cb6837d9b0bc9b11f99d7a0660ea89490c41adcfede311196d9dc7e14066",
+        },
+    },
     .minimum_zig_version = "0.12.0",
     .paths = .{
         "build.zig",
@@ -11,4 +16,3 @@
         "README.md",
     },
 }
-
