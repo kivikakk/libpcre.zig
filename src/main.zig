@@ -256,3 +256,12 @@ test "missing capture group at end of capture list" {
         null,
     }, captures);
 }
+
+test "what" {
+    const regex = try Regex.compile("(?:(\\\\.|[^|\r\n])*)", .{ .Utf8 = true });
+    defer regex.deinit();
+    const line =
+        " the void type can only have a single value (which is also voida) and " ++
+        " indicates the absence of a value. Functions that do not ret |\n";
+    try testing.expect((try regex.matches(line, .{ .Anchored = true })) != null);
+}
