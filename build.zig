@@ -4,7 +4,7 @@ const builtin = @import("builtin");
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
-    const use_system = b.option(bool, "system_library", "link against libcpre from the system instead of source build") orelse if (target.result.os.tag == .macos) true else false;
+    const use_system = b.option(bool, "system_library", "link against libpcre from the system instead of source build") orelse if (target.result.os.tag == .macos) true else false;
     const pcre_dep = b.dependency("pcre", .{
         .optimize = optimize,
         .target = target,
