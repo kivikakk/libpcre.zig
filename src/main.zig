@@ -256,3 +256,13 @@ test "missing capture group at end of capture list" {
         null,
     }, captures);
 }
+
+test "what" {
+    const regex = try Regex.compile("(?:ab|.)*", .{});
+    defer regex.deinit();
+
+    const line =
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ++
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+    try testing.expect((try regex.matches(line, .{})) != null);
+}

@@ -9,11 +9,11 @@ jobs:
     strategy:
       matrix:
         zig-version: ["0.12.0", "0.13.0"]
-        runs-on: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        runs-on: ["ubuntu-latest", "macos-13", "macos-latest", "windows-latest"]
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v4
-      - uses: goto-bus-stop/setup-zig@v2
+      - uses: goto-bus-stop/setup-zig@2a9625d550eefc3a9b1a43d342ad655f563f8241
         with:
           version: ${{ matrix.zig-version }}
       - run: zig build
