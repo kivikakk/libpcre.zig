@@ -3,8 +3,8 @@
     .version = "0.1.0",
     .dependencies = .{
         .pcre = .{
-            .url = "https://github.com/lun-4/pcre-8.45/archive/3c444040e8d025f6d6c6234e79f57f9d2ae37c5c.tar.gz",
-            .hash = "12205fec8827123a6019a6a34e7fc81345c424bf6a0df0ff57cb4909c0d57295ca75",
+            .url = "https://github.com/lun-4/pcre-8.45/archive/999bbb603e2d4b05acfbdd82df638eb6664a95c7.tar.gz",
+            .hash = "1220e7e5cb6837d9b0bc9b11f99d7a0660ea89490c41adcfede311196d9dc7e14066",
         },
     },
     .minimum_zig_version = "0.12.0",

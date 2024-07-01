@@ -33,7 +33,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .target = target,
     });
-    main_tests.linkLibC();
     try linkPcre(b, &main_tests.root_module, libpcre, use_system);
 
     const main_tests_run = b.addRunArtifact(main_tests);
