@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    try linkPcre(b, &lib.root_module, libpcre, use_system);
+    try linkPcre(b, lib.root_module, libpcre, use_system);
     b.installArtifact(lib);
 
     const main_tests = b.addTest(.{
@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .target = target,
     });
-    try linkPcre(b, &main_tests.root_module, libpcre, use_system);
+    try linkPcre(b, main_tests.root_module, libpcre, use_system);
 
     const main_tests_run = b.addRunArtifact(main_tests);
     main_tests_run.step.dependOn(&main_tests.step);
