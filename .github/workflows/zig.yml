@@ -8,7 +8,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        zig-version: ["0.12.0", "0.13.0"]
+        zig-version: ["0.14.0"]
         runs-on: ["ubuntu-latest", "macos-13", "macos-latest", "windows-latest"]
     runs-on: ${{ matrix.runs-on }}
     steps:
@@ -26,5 +26,5 @@ jobs:
           submodules: recursive
       - uses: goto-bus-stop/setup-zig@v1
         with:
-          version: 0.12.0
+          version: 0.14.0
       - run: zig fmt --check build.zig src/*.zig
