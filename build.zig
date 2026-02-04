@@ -4,7 +4,13 @@ const builtin = @import("builtin");
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
-    const use_system = b.option(bool, "system_library", "link against libpcre from the system instead of source build") orelse false;
+
+    const use_system = b.option(
+        bool,
+        "system_library",
+        "link against libpcre from the system instead of source build",
+    ) orelse false;
+
     const pcre_dep = b.dependency("pcre", .{
         .optimize = optimize,
         .target = target,
@@ -18,20 +24,20 @@ pub fn build(b: *std.Build) !void {
     });
     try linkPcre(b, mod, libpcre, use_system);
 
-    const lib = b.addStaticLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "libpcre.zig",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     try linkPcre(b, lib.root_module, libpcre, use_system);
     b.installArtifact(lib);
 
     const main_tests = b.addTest(.{
         .name = "main_tests",
-        .root_source_file = b.path("src/main.zig"),
-        .optimize = optimize,
-        .target = target,
+        .root_module = mod,
     });
     try linkPcre(b, main_tests.root_module, libpcre, use_system);
 
