@@ -2,9 +2,7 @@ const std = @import("std");
 const assert = std.debug.assert;
 const testing = std.testing;
 
-const c = @cImport({
-    @cInclude("pcre.h");
-});
+const c = @import("c");
 
 pub const Options = struct {
     Anchored: bool = false,
