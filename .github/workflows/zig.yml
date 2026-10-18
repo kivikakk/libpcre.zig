@@ -8,7 +8,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        zig-version: ["0.15.1"]
+        zig-version: ["0.17.0"]
         runs-on: ["ubuntu-latest", "macos-latest", "windows-latest"]
     runs-on: ${{ matrix.runs-on }}
     steps:
